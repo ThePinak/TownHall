@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { networkManager } from '../network/colyseusClient';
+import { VoiceControls } from './VoiceControls';
+import { RoomOccupants } from './RoomOccupants';
 
 export const UIOverlay: React.FC = () => {
   const currentZoneName = useGameStore((state) => state.currentZoneName);
@@ -143,6 +145,11 @@ export const UIOverlay: React.FC = () => {
         </div>
       </div>
 
+      {/* Left Widget: Room Occupants (Who is in this room) */}
+      <div className="mt-3 self-start">
+        <RoomOccupants />
+      </div>
+
       {/* Disconnect Alert Banner */}
       {disconnectReason && (
         <div className="self-center pointer-events-auto bg-red-950/95 border border-red-500 text-red-200 p-4 rounded-xl shadow-2xl max-w-lg text-center my-auto animate-bounce">
@@ -216,12 +223,15 @@ export const UIOverlay: React.FC = () => {
           <div className="text-slate-500 text-[10px]">Speed: 140 px/s | 20 Hz State Sync | Max: 20 Players</div>
         </div>
 
-        {isGameLoaded && (
-          <div className="text-[11px] text-slate-400 bg-slate-950/80 px-2.5 py-1 rounded border border-slate-800 shadow backdrop-blur-sm pointer-events-auto flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
-            Multiplayer Mode (Colyseus)
-          </div>
-        )}
+        <div className="flex flex-col items-end gap-2">
+          <VoiceControls />
+          {isGameLoaded && (
+            <div className="text-[11px] text-slate-400 bg-slate-950/80 px-2.5 py-1 rounded border border-slate-800 shadow backdrop-blur-sm pointer-events-auto flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
+              Multiplayer Mode (Colyseus)
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

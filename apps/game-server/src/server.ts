@@ -7,6 +7,7 @@ import { WorldRoom } from './rooms/WorldRoom';
 import { verifyAuthToken, registerUser, loginUser } from './services/authService';
 import { WorldService } from './services/worldService';
 import { LifecycleService } from './services/lifecycleService';
+import { VoiceService } from './services/voiceService';
 
 const port = Number(process.env.PORT || 2567);
 const app = express();
@@ -25,7 +26,7 @@ app.use((req, res, next) => {
 });
 
 // Health Check
-app.get('/health', (_req, res) => {
+app.get(['/health', '/api/health'], (_req, res) => {
   res.json({ status: 'ok', time: Date.now(), service: 'townhall-game-server' });
 });
 
@@ -146,6 +147,23 @@ app.post('/api/worlds/:worldId/invitations/regenerate', requireAuth, async (req,
     res.json(result);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+// 6. Generate Voice Token (LiveKit WebRTC AccessToken)
+app.post('/api/voice/token', requireAuth, async (req, res) => {
+  try {
+    const user = (req as any).user;
+    const { worldId } = req.body;
+    if (!worldId) {
+      res.status(400).json({ error: 'worldId is required' });
+      return;
+    }
+    const tokenData = await VoiceService.createVoiceToken(worldId, user.userId, user.displayName);
+    res.json(tokenData);
+  } catch (err: any) {
+    console.error('[Voice] Error creating voice token:', err);
+    res.status(500).json({ error: err.message || 'Failed to issue voice token' });
   }
 });
 

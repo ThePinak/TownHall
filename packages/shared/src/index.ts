@@ -60,6 +60,7 @@ export interface JoinPayload {
 }
 
 export * from './auth';
+export * from './voice';
 
 export function normalizeVelocity(vx: number, vy: number, speed: number = MOVEMENT_SPEED): { vx: number; vy: number } {
   if (vx !== 0 && vy !== 0) {

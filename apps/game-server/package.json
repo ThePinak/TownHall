@@ -7,7 +7,7 @@
     "dev": "tsx watch --env-file=../../.env src/server.ts",
     "build": "tsc",
     "start": "node --env-file=../../.env dist/server.js",
-    "test": "node --env-file=../../.env --import tsx --test src/rooms/WorldRoom.test.ts src/services/worldService.test.ts",
+    "test": "node --env-file=../../.env --import tsx --test src/rooms/WorldRoom.test.ts src/services/worldService.test.ts src/services/voiceService.test.ts",
     "test:e2e": "node --env-file=../../.env --import tsx --test src/multiplayer.e2e.test.ts src/lifecycle.e2e.test.ts",
     "typecheck": "tsc --noEmit"
   },
@@ -18,7 +18,8 @@
     "@townhall/shared": "workspace:*",
     "colyseus": "^0.15.42",
     "cors": "^2.8.5",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "livekit-server-sdk": "^2.19.3"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",

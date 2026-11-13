@@ -3,6 +3,7 @@ import { Player } from '../entities/Player';
 import { RemotePlayer } from '../entities/RemotePlayer';
 import { useGameStore } from '../../store/gameStore';
 import { networkManager } from '../../network/colyseusClient';
+import { voiceManager } from '../../voice/voiceManager';
 import { MAP_WIDTH_PX, MAP_HEIGHT_PX, getZoneAt, ZoneId, AvatarId, Direction, MovementState } from '@townhall/shared';
 import type { Room } from 'colyseus.js';
 
@@ -105,6 +106,7 @@ export class WorldScene extends Phaser.Scene {
       const remote = new RemotePlayer(
         this,
         sessionId,
+        player.userId,
         player.x,
         player.y,
         player.avatarId as AvatarId,
@@ -140,9 +142,20 @@ export class WorldScene extends Phaser.Scene {
 
     this.player.update();
 
-    // Update remote players' lerp
-    for (const remote of this.remotePlayers.values()) {
+    // Update remote players' lerp & voice proximity
+    for (const [sessionId, remote] of this.remotePlayers.entries()) {
       remote.update();
+
+      const dx = this.player.x - remote.x;
+      const dy = this.player.y - remote.y;
+      const distance = Math.hypot(dx, dy);
+
+      const remoteState = this.colyseusRoom?.state.players.get(sessionId);
+      const isSameRoom = remoteState && remoteState.zoneId === this.currentZoneId;
+
+      if (remote.userId) {
+        voiceManager.updateProximity(remote.userId, distance, !!isSameRoom);
+      }
     }
 
     // Zone detection at current coordinates

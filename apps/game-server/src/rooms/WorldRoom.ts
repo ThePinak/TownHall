@@ -15,11 +15,13 @@ import {
   AVATAR_IDS,
   DISCONNECT_CODE_NEWER_SESSION,
   DISCONNECT_CODE_CAPACITY_REACHED,
+  VOICE_EVALUATION_INTERVAL_MS,
 } from '@townhall/shared';
 import { verifyAuthToken } from '../services/authService';
 import { WorldService } from '../services/worldService';
 import { SessionService } from '../services/sessionService';
 import { LifecycleService } from '../services/lifecycleService';
+import { VoiceService, ParticipantVoiceState } from '../services/voiceService';
 
 // 20 Town Hall safe spawn coordinates from world-v1.tmj
 export const TOWN_HALL_SPAWNS = [
@@ -51,6 +53,32 @@ export class WorldRoom extends Room<WorldState> {
     this.onMessage('move', (client, data: MovePayload) => {
       this.handlePlayerMove(client, data);
     });
+
+    // Voice state message handlers
+    this.onMessage('voice:mute', (client, data: { isMuted: boolean }) => {
+      const player = this.state.players.get(client.sessionId);
+      if (player) {
+        player.isMuted = !!data.isMuted;
+      }
+    });
+
+    this.onMessage('voice:speaking', (client, data: { isSpeaking: boolean }) => {
+      const player = this.state.players.get(client.sessionId);
+      if (player) {
+        player.isSpeaking = !!data.isSpeaking;
+      }
+    });
+
+    this.onMessage('voice:focus-talk', (client, data: { enabled: boolean }) => {
+      const player = this.state.players.get(client.sessionId);
+      if (player) {
+        // Toggle-to-Talk only permissible while physically inside the Focus Room (DEC-07)
+        player.focusTalkEnabled = player.zoneId === 'focus' ? !!data.enabled : false;
+      }
+    });
+
+    // 10 Hz authoritative voice proximity & acoustic isolation evaluation loop (100ms)
+    this.clock.setInterval(() => this.evaluateVoiceProximity(), VOICE_EVALUATION_INTERVAL_MS);
   }
 
   async onAuth(client: Client, options?: JoinPayload): Promise<AuthContext> {
@@ -92,6 +120,8 @@ export class WorldRoom extends Room<WorldState> {
       } catch (err) {
         // Ignore if already disconnected
       }
+      // Instantly revoke LiveKit voice permissions for the old session
+      VoiceService.handleParticipantDisconnect(worldId, userId).catch(() => {});
     }
 
     // Record new active session
@@ -164,11 +194,20 @@ export class WorldRoom extends Room<WorldState> {
     const zone = getZoneAt(player.x, player.y);
     if (zone && zone.id !== player.zoneId) {
       player.zoneId = zone.id;
+      // Leaving Focus Room automatically disables transmission
+      if (player.zoneId !== 'focus') {
+        player.focusTalkEnabled = false;
+      }
     }
   }
 
   async onLeave(client: Client, consented?: boolean) {
     const player = this.state.players.get(client.sessionId);
+    if (player) {
+      // Instantly revoke LiveKit voice subscriptions and remove participant
+      VoiceService.handleParticipantDisconnect(this.state.worldId, player.userId).catch(() => {});
+    }
+
     if (player && this.userToClientMap.get(player.userId)?.sessionId === client.sessionId) {
       this.userToClientMap.delete(player.userId);
     }
@@ -186,6 +225,29 @@ export class WorldRoom extends Room<WorldState> {
 
   update(deltaTime: number) {
     // 20 Hz simulation tick
+  }
+
+  /**
+   * 10 Hz authoritative voice proximity & acoustic isolation evaluation
+   */
+  private async evaluateVoiceProximity() {
+    if (this.state.players.size < 2) return;
+
+    const participants: ParticipantVoiceState[] = [];
+    this.state.players.forEach((player) => {
+      participants.push({
+        userId: player.userId,
+        sessionId: player.sessionId,
+        displayName: player.displayName,
+        zoneId: player.zoneId,
+        x: player.x,
+        y: player.y,
+        isMuted: player.isMuted,
+        focusTalkEnabled: player.focusTalkEnabled,
+      });
+    });
+
+    await VoiceService.evaluateAndSyncProximity(this.state.worldId, participants);
   }
 
   onDispose() {

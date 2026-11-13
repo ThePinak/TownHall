@@ -3,15 +3,17 @@ import { Direction, MovementState, SPRITE_WIDTH, AvatarId } from '@townhall/shar
 
 export class RemotePlayer extends Phaser.GameObjects.Sprite {
   public sessionId: string;
+  public userId: string;
   private nameplate: Phaser.GameObjects.Text;
   private targetX: number;
   private targetY: number;
   private currentDirection: Direction = 'down';
   private avatarKey: string;
 
-  constructor(scene: Phaser.Scene, sessionId: string, x: number, y: number, avatarKey: AvatarId, displayName: string) {
+  constructor(scene: Phaser.Scene, sessionId: string, userId: string, x: number, y: number, avatarKey: AvatarId, displayName: string) {
     super(scene, x, y, avatarKey, 1);
     this.sessionId = sessionId;
+    this.userId = userId;
     this.avatarKey = avatarKey;
     this.targetX = x;
     this.targetY = y;

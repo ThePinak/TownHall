@@ -16,6 +16,10 @@ export class PlayerState extends Schema {
   @type('string') movementState: MovementState = 'idle';
   @type('string') zoneId: ZoneId = 'town-hall';
 
+  @type('boolean') isMuted: boolean = false;
+  @type('boolean') isSpeaking: boolean = false;
+  @type('boolean') focusTalkEnabled: boolean = false;
+
   lastUpdatedAt: number = Date.now();
 }
 
