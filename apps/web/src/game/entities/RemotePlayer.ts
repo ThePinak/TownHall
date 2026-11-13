@@ -38,11 +38,13 @@ export class RemotePlayer extends Phaser.GameObjects.Sprite {
   }
 
   setDirectionAndState(direction: Direction, state: MovementState) {
-    this.currentDirection = direction;
-    if (state === 'walking') {
-      this.anims.play(`${this.avatarKey}-walk-${direction}`, true);
+    this.currentDirection = direction || 'down';
+    const animKey = `${this.avatarKey}-${state === 'walking' ? 'walk' : 'idle'}-${this.currentDirection}`;
+    if (this.scene.anims.exists(animKey)) {
+      this.anims.play(animKey, true);
     } else {
-      this.anims.play(`${this.avatarKey}-idle-${direction}`, true);
+      const row = this.currentDirection === 'left' ? 1 : this.currentDirection === 'right' ? 2 : this.currentDirection === 'up' ? 3 : 0;
+      this.setFrame(row * 3 + 1);
     }
   }
 
@@ -54,9 +56,21 @@ export class RemotePlayer extends Phaser.GameObjects.Sprite {
     if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
       this.x = Phaser.Math.Linear(this.x, this.targetX, 0.25);
       this.y = Phaser.Math.Linear(this.y, this.targetY, 0.25);
+
+      // Play walk animation in the active movement direction
+      const walkKey = `${this.avatarKey}-walk-${this.currentDirection}`;
+      if (this.scene.anims.exists(walkKey)) {
+        this.anims.play(walkKey, true);
+      }
     } else {
       this.x = this.targetX;
       this.y = this.targetY;
+
+      // Settle into idle animation
+      const idleKey = `${this.avatarKey}-idle-${this.currentDirection}`;
+      if (this.scene.anims.exists(idleKey)) {
+        this.anims.play(idleKey, true);
+      }
     }
 
     this.nameplate.setPosition(this.x, this.y - SPRITE_WIDTH / 2 - 12);

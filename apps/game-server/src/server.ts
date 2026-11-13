@@ -4,7 +4,7 @@ import cors from 'cors';
 import colyseus from 'colyseus';
 const { Server } = colyseus;
 import { WorldRoom } from './rooms/WorldRoom';
-import { verifyAuthToken } from './services/authService';
+import { verifyAuthToken, registerUser, loginUser } from './services/authService';
 import { WorldService } from './services/worldService';
 import { LifecycleService } from './services/lifecycleService';
 
@@ -14,9 +14,54 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Request logging middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  console.log(`[HTTP ${req.method}] ${req.url} started`);
+  res.on('finish', () => {
+    console.log(`[HTTP ${req.method}] ${req.url} responded ${res.statusCode} (${Date.now() - start}ms)`);
+  });
+  next();
+});
+
 // Health Check
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', time: Date.now(), service: 'townhall-game-server' });
+});
+
+// Authentication Endpoints (Registration & Login)
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { email, password, displayName, avatarId } = req.body;
+    console.log(`[Auth] Register attempt for email: ${email}`);
+    if (!email || !password) {
+      res.status(400).json({ error: 'Email and password are required' });
+      return;
+    }
+    const result = await registerUser(email, password, displayName || 'Alex', avatarId || 'avatar-01');
+    console.log(`[Auth] Registration succeeded for: ${result.user.userId} (${result.user.email})`);
+    res.status(201).json(result);
+  } catch (err: any) {
+    console.error(`[Auth] Registration error:`, err.message);
+    res.status(400).json({ error: err.message || 'Registration failed' });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    console.log(`[Auth] Login attempt for email: ${email}`);
+    if (!email || !password) {
+      res.status(400).json({ error: 'Email and password are required' });
+      return;
+    }
+    const result = await loginUser(email, password);
+    console.log(`[Auth] Login succeeded for: ${result.user.userId}`);
+    res.json(result);
+  } catch (err: any) {
+    console.error(`[Auth] Login error:`, err.message);
+    res.status(401).json({ error: err.message || 'Invalid email or password' });
+  }
 });
 
 // Middleware for token authentication
@@ -24,11 +69,14 @@ async function requireAuth(req: express.Request, res: express.Response, next: ex
   const authHeader = req.headers.authorization;
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : (req.query.token as string);
 
+  console.log(`[Auth] Verifying token for ${req.method} ${req.url} (token prefix: ${token?.slice(0, 15)}...)`);
   const profile = await verifyAuthToken(token);
   if (!profile) {
+    console.warn(`[Auth] Token verification failed for ${req.url}`);
     res.status(401).json({ error: 'Unauthorized: valid authentication token required' });
     return;
   }
+  console.log(`[Auth] Authenticated as ${profile.displayName} (${profile.userId})`);
   (req as any).user = profile;
   next();
 }
@@ -42,9 +90,12 @@ app.post('/api/worlds', requireAuth, async (req, res) => {
       return;
     }
     const { name } = req.body;
+    console.log(`[World] Creating world "${name}" for user ${user.userId}`);
     const result = await WorldService.createWorld(user.userId, name || 'My Town');
+    console.log(`[World] Created world ${result.world.id} for user ${user.userId}`);
     res.status(201).json(result);
   } catch (err: any) {
+    console.error(`[World] Create world error:`, err.message);
     res.status(400).json({ error: err.message || 'Failed to create world' });
   }
 });

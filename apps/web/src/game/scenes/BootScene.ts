@@ -60,6 +60,39 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Register idle and walking animations for all 4 avatar spritesheets globally
+    const avatars = ['avatar-01', 'avatar-02', 'avatar-03', 'avatar-04'];
+    const directions: { dir: string; row: number }[] = [
+      { dir: 'down', row: 0 },
+      { dir: 'left', row: 1 },
+      { dir: 'right', row: 2 },
+      { dir: 'up', row: 3 },
+    ];
+
+    for (const key of avatars) {
+      for (const { dir, row } of directions) {
+        const idleFrame = row * 3 + 1;
+        const walkFrames = [row * 3, row * 3 + 1, row * 3 + 2, row * 3 + 1];
+
+        if (!this.anims.exists(`${key}-idle-${dir}`)) {
+          this.anims.create({
+            key: `${key}-idle-${dir}`,
+            frames: [{ key, frame: idleFrame }],
+            frameRate: 1,
+          });
+        }
+
+        if (!this.anims.exists(`${key}-walk-${dir}`)) {
+          this.anims.create({
+            key: `${key}-walk-${dir}`,
+            frames: this.anims.generateFrameNumbers(key, { frames: walkFrames }),
+            frameRate: 6,
+            repeat: -1,
+          });
+        }
+      }
+    }
+
     this.scene.start('WorldScene');
   }
 }

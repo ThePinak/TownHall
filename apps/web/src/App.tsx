@@ -18,6 +18,12 @@ export const App: React.FC = () => {
     const savedProfile = localStorage.getItem('townhall_auth_profile');
     if (savedToken && savedProfile) {
       try {
+        // Discard legacy/mock tokens from pre-Supabase iterations
+        if (savedToken.startsWith('usr_') || savedToken.startsWith('guest-')) {
+          localStorage.removeItem('townhall_auth_token');
+          localStorage.removeItem('townhall_auth_profile');
+          return;
+        }
         const profile = JSON.parse(savedProfile);
         setUser(profile, savedToken);
       } catch (err) {

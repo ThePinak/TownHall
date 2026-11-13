@@ -3,11 +3,11 @@ import assert from 'node:assert';
 import { WorldService } from './worldService';
 import { LifecycleService } from './lifecycleService';
 import { SessionService } from './sessionService';
-import { db } from '../db/dbClient';
+import { db, setDatabaseProvider, InMemoryDatabase } from '../db/dbClient';
 
 describe('World & Invitation Service Unit Tests (M4)', () => {
   beforeEach(() => {
-    db.reset();
+    setDatabaseProvider(new InMemoryDatabase());
   });
 
   it('creates a private world and generates a cryptographic invite secret', async () => {

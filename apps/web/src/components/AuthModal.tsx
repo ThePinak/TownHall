@@ -14,6 +14,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const serverUrl = import.meta.env.VITE_GAME_SERVER_URL || '';
+  const httpUrl = serverUrl ? serverUrl.replace(/^ws/, 'http') : '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,25 +39,38 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
       return;
     }
 
-    // Deterministic account user ID based on email
-    const userId = `usr_${btoa(cleanEmail).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16)}`;
-    const finalDisplayName = isRegistering ? displayName.trim() : displayName.trim() || cleanEmail.split('@')[0];
-    const authToken = `token:${userId}:${finalDisplayName}:${avatarId}`;
+    setIsSubmitting(true);
+    try {
+      const endpoint = isRegistering ? `${httpUrl}/api/auth/register` : `${httpUrl}/api/auth/login`;
+      const payload = isRegistering
+        ? { email: cleanEmail, password, displayName: displayName.trim(), avatarId }
+        : { email: cleanEmail, password };
 
-    const profile = {
-      userId,
-      email: cleanEmail,
-      displayName: finalDisplayName,
-      avatarId,
-      createdAt: new Date().toISOString(),
-    };
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-    // Save active account session to localStorage for persistence
-    localStorage.setItem('townhall_auth_token', authToken);
-    localStorage.setItem('townhall_auth_profile', JSON.stringify(profile));
+      const data = await resp.json();
+      if (!resp.ok) {
+        if (!isRegistering && (resp.status === 401 || data.error?.includes('Invalid'))) {
+          throw new Error('Invalid email or password. If you haven\'t created an account yet, switch to the "Create Account" tab above.');
+        }
+        throw new Error(data.error || 'Authentication failed');
+      }
 
-    setUser(profile, authToken);
-    onSuccess();
+      // Save credentials for persistence
+      localStorage.setItem('townhall_auth_token', data.token);
+      localStorage.setItem('townhall_auth_profile', JSON.stringify(data.user));
+
+      setUser(data.user, data.token);
+      onSuccess();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -174,9 +191,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
 
           <button
             type="submit"
-            className="w-full mt-6 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl transition-colors text-sm shadow-lg shadow-amber-500/25"
+            disabled={isSubmitting}
+            className="w-full mt-6 py-3 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-bold rounded-xl transition-colors text-sm shadow-lg shadow-amber-500/25"
           >
-            {isRegistering ? 'Register & Enter World Lobby' : 'Sign In'}
+            {isSubmitting
+              ? isRegistering ? 'Registering...' : 'Signing in...'
+              : isRegistering ? 'Register & Enter World Lobby' : 'Sign In'}
           </button>
         </form>
 

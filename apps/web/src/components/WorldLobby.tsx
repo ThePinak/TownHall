@@ -12,12 +12,13 @@ export const WorldLobby: React.FC<WorldLobbyProps> = ({ onEnterWorld, onSignOut 
   const [inviteInput, setInviteInput] = useState('');
   const [createdInviteToken, setCreatedInviteToken] = useState<string | null>(null);
   const [createdWorldId, setCreatedWorldId] = useState<string | null>(null);
+  const [activeOwnedWorld, setActiveOwnedWorld] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const serverUrl = import.meta.env.VITE_GAME_SERVER_URL || 'http://localhost:2567';
-  const httpUrl = serverUrl.replace(/^ws/, 'http');
+  const serverUrl = import.meta.env.VITE_GAME_SERVER_URL || '';
+  const httpUrl = serverUrl ? serverUrl.replace(/^ws/, 'http') : '';
 
   // Check URL query parameters for ?invite=XYZ
   useEffect(() => {
@@ -27,6 +28,21 @@ export const WorldLobby: React.FC<WorldLobbyProps> = ({ onEnterWorld, onSignOut 
       setInviteInput(inviteParam);
     }
   }, []);
+
+  // Fetch active world owned by this user (ADR-05 recovery)
+  useEffect(() => {
+    if (!authToken) return;
+    fetch(`${httpUrl}/api/worlds/my-active`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    })
+      .then((res) => (res.ok ? res.json() : { world: null }))
+      .then((data) => {
+        if (data.world) {
+          setActiveOwnedWorld(data.world);
+        }
+      })
+      .catch(() => {});
+  }, [authToken, httpUrl]);
 
   const handleCreateWorld = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,11 +61,18 @@ export const WorldLobby: React.FC<WorldLobbyProps> = ({ onEnterWorld, onSignOut 
 
       const data = await resp.json();
       if (!resp.ok) {
+        if (resp.status === 401) {
+          onSignOut();
+          return;
+        }
         throw new Error(data.error || 'Failed to create private world');
       }
 
       setCreatedWorldId(data.world.id);
       setCreatedInviteToken(data.inviteToken);
+
+      // Immediately enter the world as owner
+      onEnterWorld(data.world.id, data.inviteToken, true);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -137,6 +160,28 @@ export const WorldLobby: React.FC<WorldLobbyProps> = ({ onEnterWorld, onSignOut 
         {error && (
           <div className="mb-6 p-3 bg-red-950/60 border border-red-500/50 rounded-lg text-red-200 text-xs">
             {error}
+          </div>
+        )}
+
+        {activeOwnedWorld && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-amber-500/15 via-slate-900 to-slate-900 border border-amber-500/40 rounded-xl flex items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Your Active World</span>
+              </div>
+              <h4 className="text-base font-bold text-white mt-1">{activeOwnedWorld.name}</h4>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Status: <span className="text-emerald-400 capitalize">{activeOwnedWorld.status.replace('_', ' ')}</span> • You are the world owner (no invite code needed)
+              </p>
+            </div>
+            <button
+              onClick={() => onEnterWorld(activeOwnedWorld.id, '', true)}
+              className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs shadow-lg shadow-amber-500/25 transition-all flex items-center gap-1.5 whitespace-nowrap"
+            >
+              <span>Rejoin World</span>
+              <span>→</span>
+            </button>
           </div>
         )}
 

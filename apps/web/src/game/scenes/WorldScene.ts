@@ -111,6 +111,7 @@ export class WorldScene extends Phaser.Scene {
         player.displayName
       );
       this.remotePlayers.set(sessionId, remote);
+      remote.setDirectionAndState(player.direction as Direction, player.movementState as MovementState);
 
       // Listen for position & state updates
       player.onChange(() => {

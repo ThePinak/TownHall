@@ -20,7 +20,7 @@ async function verifyCapacity() {
 
     // Wait a moment for state hydration
     await new Promise((r) => setTimeout(r, 200));
-    const initialOccupants = hostRoom.state.players.size;
+    const initialOccupants = (hostRoom.state as any).players.size;
     console.log(`Connected to room: "${targetRoomId}"`);
     console.log(`Initial room occupancy (including any open browser tabs): ${initialOccupants}/20\n`);
 
@@ -63,7 +63,7 @@ async function verifyCapacity() {
     const leaver = rooms.pop();
     await leaver.leave();
     await new Promise((r) => setTimeout(r, 300));
-    console.log(`Occupancy after departure: ${hostRoom.state.players.size}/20 (1 slot freed)`);
+    console.log(`Occupancy after departure: ${(hostRoom.state as any).players.size}/20 (1 slot freed)`);
 
     console.log(`--> Retrying the previously rejected user now that a slot is free...`);
     const accepted21 = await client21.joinById(targetRoomId, {
@@ -71,7 +71,7 @@ async function verifyCapacity() {
       avatarId: 'avatar-02',
     });
     rooms.push(accepted21);
-    console.log(`SUCCESS: Overflow-User joined successfully! Occupancy: ${hostRoom.state.players.size}/20\n`);
+    console.log(`SUCCESS: Overflow-User joined successfully! Occupancy: ${(hostRoom.state as any).players.size}/20\n`);
 
     console.log(`=== Invariant Verified: Strict 20-User Cap & Immediate 21st Rejection ===`);
   } catch (err) {
