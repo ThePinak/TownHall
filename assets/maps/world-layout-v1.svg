@@ -1,0 +1,188 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1280" width="1600" height="1280">
+  <defs>
+    <!-- 32x32 Logical Tile Grid -->
+    <pattern id="tileGrid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>
+    </pattern>
+    <!-- Diagonal Hatch for Spawn Zone -->
+    <pattern id="spawnHatch" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="16" stroke="#22c55e" stroke-width="2" stroke-opacity="0.35"/>
+    </pattern>
+  </defs>
+
+  <!-- Canvas Background -->
+  <rect width="1600" height="1280" fill="#12141c"/>
+
+  <!-- ================= ROOM FLOORS ================= -->
+  <!-- Learning Room (North): x=15..34 (480..1120), y=1..10 (32..352) -->
+  <rect x="480" y="32" width="640" height="320" fill="#2a3b34"/>
+  <!-- North Corridor: x=23..26 (736..864), y=11..12 (352..416) -->
+  <rect x="736" y="352" width="128" height="64" fill="#3a332a"/>
+
+  <!-- Town Hall (Center): x=16..33 (512..1088), y=13..26 (416..864) -->
+  <rect x="512" y="416" width="576" height="448" fill="#44382c"/>
+
+  <!-- South Corridor: x=23..26 (736..864), y=27..28 (864..928) -->
+  <rect x="736" y="864" width="128" height="64" fill="#3a332a"/>
+  <!-- Focus Room (South): x=15..34 (480..1120), y=29..38 (928..1248) -->
+  <rect x="480" y="928" width="640" height="320" fill="#2b3340"/>
+
+  <!-- Coding Room (West): x=1..13 (32..448), y=12..27 (384..896) -->
+  <rect x="32" y="384" width="416" height="512" fill="#232d3f"/>
+  <!-- West Corridor: x=14..15 (448..512), y=18..21 (576..704) -->
+  <rect x="448" y="576" width="64" height="128" fill="#3a332a"/>
+
+  <!-- Chill Room (East): x=36..48 (1152..1568), y=12..27 (384..896) -->
+  <rect x="1152" y="384" width="416" height="512" fill="#422f2b"/>
+  <!-- East Corridor: x=34..35 (1088..1152), y=18..21 (576..704) -->
+  <rect x="1088" y="576" width="64" height="128" fill="#3a332a"/>
+
+  <!-- ================= WALLS (1-TILE = 32px) ================= -->
+  <g fill="#525866" stroke="#1e222b" stroke-width="2">
+    <!-- Learning Room Walls -->
+    <rect x="448" y="0" width="704" height="32"/> <!-- North -->
+    <rect x="448" y="32" width="32" height="320"/> <!-- West -->
+    <rect x="1120" y="32" width="32" height="320"/> <!-- East -->
+    <rect x="448" y="352" width="288" height="32"/> <!-- South-West -->
+    <rect x="864" y="352" width="288" height="32"/> <!-- South-East -->
+
+    <!-- Town Hall Walls (with 4-tile openings) -->
+    <rect x="480" y="384" width="256" height="32"/> <!-- North-West -->
+    <rect x="864" y="384" width="256" height="32"/> <!-- North-East -->
+    <rect x="480" y="864" width="256" height="32"/> <!-- South-West -->
+    <rect x="864" y="864" width="256" height="32"/> <!-- South-East -->
+    <rect x="480" y="416" width="32" height="160"/> <!-- West-Top -->
+    <rect x="480" y="704" width="32" height="160"/> <!-- West-Bottom -->
+    <rect x="1088" y="416" width="32" height="160"/> <!-- East-Top -->
+    <rect x="1088" y="704" width="32" height="160"/> <!-- East-Bottom -->
+
+    <!-- Focus Room Walls -->
+    <rect x="448" y="896" width="288" height="32"/> <!-- North-West -->
+    <rect x="864" y="896" width="288" height="32"/> <!-- North-East -->
+    <rect x="448" y="928" width="32" height="320"/> <!-- West -->
+    <rect x="1120" y="928" width="32" height="320"/> <!-- East -->
+    <rect x="448" y="1248" width="704" height="32"/> <!-- South -->
+
+    <!-- Coding Room Walls -->
+    <rect x="0" y="352" width="480" height="32"/> <!-- North -->
+    <rect x="0" y="896" width="480" height="32"/> <!-- South -->
+    <rect x="0" y="384" width="32" height="512"/> <!-- West -->
+    <rect x="448" y="384" width="32" height="192"/> <!-- East-Top -->
+    <rect x="448" y="704" width="32" height="192"/> <!-- East-Bottom -->
+
+    <!-- Chill Room Walls -->
+    <rect x="1120" y="352" width="480" height="32"/> <!-- North -->
+    <rect x="1120" y="896" width="480" height="32"/> <!-- South -->
+    <rect x="1568" y="384" width="32" height="512"/> <!-- East -->
+    <rect x="1120" y="384" width="32" height="192"/> <!-- West-Top -->
+    <rect x="1120" y="704" width="32" height="192"/> <!-- West-Bottom -->
+  </g>
+
+  <!-- ================= FURNITURE FOOTPRINTS ================= -->
+  <g stroke-width="2" font-family="monospace" font-size="11" text-anchor="middle">
+    <!-- TOWN HALL -->
+    <!-- Safe Spawn Zone (6x4 tiles: x=22..27, y=18..21 -> 704..896, 576..704) -->
+    <rect x="704" y="576" width="192" height="128" fill="url(#spawnHatch)" stroke="#22c55e" stroke-dasharray="6,4"/>
+    <text x="800" y="644" fill="#86efac" font-weight="bold">SPAWN ZONE (6x4)</text>
+
+    <!-- Noticeboard & Reception & Lounge -->
+    <rect x="544" y="416" width="128" height="28" fill="#92400e" stroke="#f59e0b"/>
+    <text x="608" y="434" fill="#fef3c7">Noticeboard</text>
+
+    <rect x="928" y="448" width="128" height="64" fill="#78350f" stroke="#d97706"/>
+    <text x="992" y="484" fill="#fef3c7">Welcome Desk</text>
+
+    <rect x="544" y="768" width="96" height="64" fill="#78350f" stroke="#d97706"/>
+    <text x="592" y="804" fill="#fef3c7">Lounge</text>
+
+    <rect x="960" y="768" width="96" height="64" fill="#78350f" stroke="#d97706"/>
+    <text x="1008" y="804" fill="#fef3c7">Lounge</text>
+
+    <!-- LEARNING ROOM -->
+    <rect x="672" y="32" width="256" height="28" fill="#065f46" stroke="#34d399"/>
+    <text x="800" y="50" fill="#ecfdf5">Presentation Board</text>
+
+    <rect x="480" y="64" width="32" height="96" fill="#713f12" stroke="#ca8a04"/>
+    <rect x="1088" y="64" width="32" height="96" fill="#713f12" stroke="#ca8a04"/>
+    <rect x="544" y="128" width="128" height="64" fill="#854d0e" stroke="#eab308"/>
+    <rect x="544" y="224" width="128" height="64" fill="#854d0e" stroke="#eab308"/>
+    <rect x="928" y="128" width="128" height="64" fill="#854d0e" stroke="#eab308"/>
+    <rect x="928" y="224" width="128" height="64" fill="#854d0e" stroke="#eab308"/>
+    <text x="608" y="164" fill="#fef9c3">Study Table</text>
+    <text x="992" y="164" fill="#fef9c3">Study Table</text>
+
+    <!-- CODING ROOM -->
+    <rect x="128" y="384" width="192" height="28" fill="#0e7490" stroke="#22d3ee"/>
+    <text x="224" y="402" fill="#ecfeff">Whiteboard</text>
+
+    <rect x="64" y="448" width="128" height="64" fill="#1e293b" stroke="#38bdf8"/>
+    <rect x="64" y="736" width="128" height="64" fill="#1e293b" stroke="#38bdf8"/>
+    <rect x="256" y="448" width="128" height="64" fill="#1e293b" stroke="#38bdf8"/>
+    <rect x="256" y="736" width="128" height="64" fill="#1e293b" stroke="#38bdf8"/>
+    <text x="128" y="484" fill="#bae6fd">Dev Pod 1</text>
+    <text x="320" y="484" fill="#bae6fd">Dev Pod 2</text>
+    <text x="128" y="772" fill="#bae6fd">Dev Pod 3</text>
+    <text x="320" y="772" fill="#bae6fd">Dev Pod 4</text>
+
+    <!-- CHILL ROOM -->
+    <rect x="1216" y="448" width="160" height="64" fill="#6b21a8" stroke="#c084fc"/>
+    <text x="1296" y="484" fill="#f3e8ff">Sofa North</text>
+    <rect x="1248" y="512" width="96" height="32" fill="#7c2d12" stroke="#fb923c"/>
+
+    <rect x="1216" y="768" width="160" height="64" fill="#6b21a8" stroke="#c084fc"/>
+    <text x="1296" y="804" fill="#f3e8ff">Sofa South</text>
+    <rect x="1248" y="736" width="96" height="32" fill="#7c2d12" stroke="#fb923c"/>
+
+    <rect x="1472" y="512" width="64" height="128" fill="#7c2d12" stroke="#fb923c"/>
+    <text x="1504" y="580" fill="#ffedd5">Bar</text>
+
+    <!-- FOCUS ROOM -->
+    <g fill="#334155" stroke="#94a3b8">
+      <rect x="512" y="960" width="64" height="48"/>
+      <rect x="512" y="1056" width="64" height="48"/>
+      <rect x="512" y="1152" width="64" height="48"/>
+      <rect x="640" y="1152" width="64" height="48"/>
+      <rect x="1024" y="960" width="64" height="48"/>
+      <rect x="1024" y="1056" width="64" height="48"/>
+      <rect x="1024" y="1152" width="64" height="48"/>
+      <rect x="896" y="1152" width="64" height="48"/>
+    </g>
+    <text x="544" y="988" fill="#e2e8f0">Desk</text>
+    <text x="1056" y="988" fill="#e2e8f0">Desk</text>
+  </g>
+
+  <!-- ================= LOGICAL VOICE ZONE BOUNDARIES ================= -->
+  <g stroke="#f43f5e" stroke-width="3" stroke-dasharray="8,6">
+    <line x1="736" y1="384" x2="864" y2="384"/> <!-- North boundary -->
+    <line x1="736" y1="896" x2="864" y2="896"/> <!-- South boundary -->
+    <line x1="480" y1="576" x2="480" y2="704"/> <!-- West boundary -->
+    <line x1="1120" y1="576" x2="1120" y2="704"/> <!-- East boundary -->
+  </g>
+
+  <!-- ================= 160px PROXIMITY RADIUS REFERENCE ================= -->
+  <circle cx="800" cy="640" r="160" fill="#38bdf8" fill-opacity="0.08" stroke="#38bdf8" stroke-width="2" stroke-dasharray="6,4"/>
+  <circle cx="800" cy="640" r="8" fill="#38bdf8"/>
+  <text x="800" y="788" fill="#7dd3fc" font-family="monospace" font-size="11" text-anchor="middle">160px Voice Radius (5 tiles)</text>
+
+  <!-- ================= ROOM LABELS ================= -->
+  <g font-family="sans-serif" font-weight="bold" text-anchor="middle" fill="#ffffff" fill-opacity="0.9">
+    <text x="800" y="488" font-size="20">TOWN HALL (18×14 tiles)</text>
+    <text x="800" y="100" font-size="18">LEARNING ROOM (20×10 tiles)</text>
+    <text x="240" y="640" font-size="18">CODING ROOM (13×16 tiles)</text>
+    <text x="1360" y="640" font-size="18">CHILL ROOM (13×16 tiles)</text>
+    <text x="800" y="1080" font-size="18">FOCUS ROOM (20×10 tiles)</text>
+  </g>
+
+  <!-- ================= GRID OVERLAY & LEGEND ================= -->
+  <rect width="1600" height="1280" fill="url(#tileGrid)" pointer-events="none"/>
+
+  <g transform="translate(24, 24)" font-family="monospace" font-size="12" fill="#e2e8f0">
+    <rect width="380" height="118" rx="6" fill="#0f172a" fill-opacity="0.9" stroke="#334155"/>
+    <text x="14" y="24" font-weight="bold" fill="#ffffff">WORLD LAYOUT V1 — PHASE 1A</text>
+    <text x="14" y="44">Grid: 50 × 40 tiles (1600 × 1280 px @ 32px/tile)</text>
+    <text x="14" y="64">Corridors: 4 tiles (128 px) wide</text>
+    <text x="14" y="84" fill="#86efac">Green Dashed: Safe Spawn Region (Town Hall)</text>
+    <text x="14" y="104" fill="#fda4af">Red Dashed: Voice Zone Boundaries</text>
+  </g>
+</svg>
+

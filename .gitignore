@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Production builds
+dist/
+build/
+.output/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.env
+
+# System & Editor files
+.DS_Store
+Thumbs.db
+*.log
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+
+# Testing
+coverage/
+.playwright/
+test-results/

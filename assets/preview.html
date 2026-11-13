@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TownHall — Phase 1C Asset Preview</title>
+  <style>
+    body {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 24px;
+    }
+    h1, h2 { margin: 0 0 12px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .card h3 { margin: 0 0 10px; font-size: 16px; }
+    .pixel {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      background: repeating-conic-gradient(#334155 0% 25%, #1e293b 0% 50%) 50% / 16px 16px;
+      border: 1px solid #475569;
+    }
+    .walk-preview {
+      width: 64px;
+      height: 96px;
+      background-size: 192px 384px;
+      image-rendering: pixelated;
+      border: 1px solid #475569;
+      margin-top: 10px;
+      animation: walkDown 0.6s steps(1) infinite;
+    }
+    @keyframes walkDown {
+      0% { background-position: 0px 0px; }
+      33% { background-position: -64px 0px; }
+      66% { background-position: -128px 0px; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Phase 1C — Avatar &amp; Tileset Preview</h1>
+  <p>All character spritesheets are 96×192 px (3 cols × 4 rows of 32×48 px frames: Down, Left, Right, Up).</p>
+
+  <h2>1. Predefined Avatars (4)</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Avatar 01 — Alex</h3>
+      <img class="pixel" src="./characters/avatar-01.png" width="192" height="384" alt="Avatar 01" />
+      <div class="walk-preview" style="background-image: url('./characters/avatar-01.png');"></div>
+    </div>
+    <div class="card">
+      <h3>Avatar 02 — Jordan</h3>
+      <img class="pixel" src="./characters/avatar-02.png" width="192" height="384" alt="Avatar 02" />
+      <div class="walk-preview" style="background-image: url('./characters/avatar-02.png');"></div>
+    </div>
+    <div class="card">
+      <h3>Avatar 03 — Sam</h3>
+      <img class="pixel" src="./characters/avatar-03.png" width="192" height="384" alt="Avatar 03" />
+      <div class="walk-preview" style="background-image: url('./characters/avatar-03.png');"></div>
+    </div>
+    <div class="card">
+      <h3>Avatar 04 — Taylor</h3>
+      <img class="pixel" src="./characters/avatar-04.png" width="192" height="384" alt="Avatar 04" />
+      <div class="walk-preview" style="background-image: url('./characters/avatar-04.png');"></div>
+    </div>
+  </div>
+
+  <h2>2. Tilesets (32×32 px tiles, shown at 2×)</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>environment.png (256×128 px)</h3>
+      <img class="pixel" src="./tilesets/environment.png" width="512" height="256" alt="Environment Tileset" />
+    </div>
+    <div class="card">
+      <h3>furniture.png (256×128 px)</h3>
+      <img class="pixel" src="./tilesets/furniture.png" width="512" height="256" alt="Furniture Tileset" />
+    </div>
+  </div>
+</body>
+</html>
+
