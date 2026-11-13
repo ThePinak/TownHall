@@ -39,6 +39,22 @@ export const ZONES: Record<ZoneId, ZoneDefinition> = {
 export const AVATAR_IDS = ['avatar-01', 'avatar-02', 'avatar-03', 'avatar-04'] as const;
 export type AvatarId = (typeof AVATAR_IDS)[number];
 
+export const MAX_WORLD_CAPACITY = 20;
+
+export interface MovePayload {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  direction: Direction;
+  movementState: MovementState;
+}
+
+export interface JoinPayload {
+  displayName: string;
+  avatarId: AvatarId;
+}
+
 export function normalizeVelocity(vx: number, vy: number, speed: number = MOVEMENT_SPEED): { vx: number; vy: number } {
   if (vx !== 0 && vy !== 0) {
     const factor = Math.SQRT1_2; // 1 / Math.sqrt(2) ≈ 0.7071
@@ -55,3 +71,4 @@ export function getZoneAt(x: number, y: number): ZoneDefinition | null {
   }
   return null;
 }
+

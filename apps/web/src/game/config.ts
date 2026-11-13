@@ -25,3 +25,4 @@ export function createGameConfig(parent: HTMLElement): Phaser.Types.Core.GameCon
     backgroundColor: '#0b0f19',
   };
 }
+

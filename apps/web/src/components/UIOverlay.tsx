@@ -7,6 +7,8 @@ export const UIOverlay: React.FC = () => {
   const playerPosition = useGameStore((state) => state.playerPosition);
   const displayName = useGameStore((state) => state.displayName);
   const isGameLoaded = useGameStore((state) => state.isGameLoaded);
+  const onlineCount = useGameStore((state) => state.onlineCount);
+  const networkStatus = useGameStore((state) => state.networkStatus);
 
   const getZoneBadgeColor = (zoneId: string) => {
     switch (zoneId) {
@@ -19,16 +21,27 @@ export const UIOverlay: React.FC = () => {
     }
   };
 
+  const getStatusDotColor = () => {
+    switch (networkStatus) {
+      case 'connected': return 'bg-emerald-500 animate-pulse';
+      case 'connecting': return 'bg-amber-500 animate-pulse';
+      case 'error': return 'bg-rose-500';
+      default: return 'bg-slate-500';
+    }
+  };
+
   return (
     <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 font-mono select-none">
       {/* Top Bar: Room Banner & World Presence */}
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 bg-slate-900/90 border border-slate-700/80 px-3.5 py-1.5 rounded-lg shadow-lg backdrop-blur-sm pointer-events-auto">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className={`w-2.5 h-2.5 rounded-full ${getStatusDotColor()}`}></span>
             <span className="text-xs font-semibold text-slate-200">TownHall V1</span>
             <span className="text-slate-500 text-xs">|</span>
-            <span className="text-xs text-slate-400">1 Player (Local)</span>
+            <span className="text-xs text-slate-300 font-bold">
+              {onlineCount} / 20 Online
+            </span>
           </div>
 
           {/* Current Room Indicator (Animated on room transition) */}
@@ -60,15 +73,17 @@ export const UIOverlay: React.FC = () => {
             <span className="bg-slate-800 border border-slate-700 text-slate-200 px-1.5 py-0.5 rounded text-[10px] font-bold">↑ ← ↓ →</span>
             <span>to Move</span>
           </div>
-          <div className="text-slate-500 text-[10px]">Speed: 140 px/s (normalized) | Collision: Active</div>
+          <div className="text-slate-500 text-[10px]">Speed: 140 px/s | 20 Hz State Sync | Max: 20 Players</div>
         </div>
 
         {isGameLoaded && (
-          <div className="text-[11px] text-slate-500 bg-slate-950/60 px-2 py-1 rounded border border-slate-800/60 pointer-events-auto">
-            M2 Single-Player Engine Ready
+          <div className="text-[11px] text-slate-400 bg-slate-950/80 px-2.5 py-1 rounded border border-slate-800 shadow backdrop-blur-sm pointer-events-auto flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
+            Multiplayer Mode (Colyseus)
           </div>
         )}
       </div>
     </div>
   );
 };
+

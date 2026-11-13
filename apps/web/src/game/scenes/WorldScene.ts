@@ -1,18 +1,24 @@
 import Phaser from 'phaser';
 import { Player } from '../entities/Player';
+import { RemotePlayer } from '../entities/RemotePlayer';
 import { useGameStore } from '../../store/gameStore';
-import { MAP_WIDTH_PX, MAP_HEIGHT_PX, getZoneAt, ZoneId } from '@townhall/shared';
+import { networkManager } from '../../network/colyseusClient';
+import { MAP_WIDTH_PX, MAP_HEIGHT_PX, getZoneAt, ZoneId, AvatarId, Direction, MovementState } from '@townhall/shared';
+import type { Room } from 'colyseus.js';
 
 export class WorldScene extends Phaser.Scene {
   private player!: Player;
   private collisionLayer!: Phaser.Physics.Arcade.StaticGroup;
   private currentZoneId: ZoneId = 'town-hall';
+  private remotePlayers = new Map<string, RemotePlayer>();
+  private colyseusRoom: Room | null = null;
+  private lastNetworkSendTime = 0;
 
   constructor() {
     super({ key: 'WorldScene' });
   }
 
-  create(): void {
+  async create(): Promise<void> {
     const map = this.make.tilemap({ key: 'world-map' });
 
     // Link tilesets to layer imagery
@@ -40,19 +46,33 @@ export class WorldScene extends Phaser.Scene {
       this.collisionLayer.add(zone);
     }
 
-    // Find spawn position in Town Hall (spawn-1)
-    const spawnObjects = map.getObjectLayer('Spawns')?.objects || [];
-    const initialSpawn = spawnObjects.find((s) => s.name === 'spawn-1') || spawnObjects[0];
-    const spawnX = initialSpawn ? initialSpawn.x || 720 : 720;
-    const spawnY = initialSpawn ? initialSpawn.y || 592 : 592;
+    // Default spawn coordinates in Town Hall
+    let spawnX = 720;
+    let spawnY = 592;
 
-    // Get selected avatar and display name from Zustand store
     const store = useGameStore.getState();
-    const avatarKey = store.avatarId;
-    const displayName = store.displayName;
+
+    // Connect to Colyseus Server (Phase 3B)
+    try {
+      this.colyseusRoom = await networkManager.joinWorld({
+        displayName: store.displayName,
+        avatarId: store.avatarId,
+      });
+
+      this.setupColyseusListeners(this.colyseusRoom);
+
+      // Read server-assigned spawn position for local player
+      const myState = this.colyseusRoom.state.players.get(this.colyseusRoom.sessionId);
+      if (myState) {
+        spawnX = myState.x;
+        spawnY = myState.y;
+      }
+    } catch (err) {
+      console.warn('[WorldScene] Running in offline/fallback mode:', err);
+    }
 
     // Instantiate local Player
-    this.player = new Player(this, spawnX, spawnY, avatarKey, displayName);
+    this.player = new Player(this, spawnX, spawnY, store.avatarId, store.displayName);
 
     // Setup Collision
     this.physics.add.collider(this.player, this.collisionLayer);
@@ -70,10 +90,55 @@ export class WorldScene extends Phaser.Scene {
     store.setPlayerPosition({ x: Math.round(spawnX), y: Math.round(spawnY) });
   }
 
-  update(): void {
+  private setupColyseusListeners(room: Room) {
+    // Listen for players joining/leaving
+    room.state.players.onAdd((player: any, sessionId: string) => {
+      // Ignore local player
+      if (sessionId === room.sessionId) return;
+
+      console.log(`[WorldScene] Remote player joined: ${sessionId} (${player.displayName})`);
+
+      const remote = new RemotePlayer(
+        this,
+        sessionId,
+        player.x,
+        player.y,
+        player.avatarId as AvatarId,
+        player.displayName
+      );
+      this.remotePlayers.set(sessionId, remote);
+
+      // Listen for position & state updates
+      player.onChange(() => {
+        remote.setTargetPosition(player.x, player.y);
+        remote.setDirectionAndState(player.direction as Direction, player.movementState as MovementState);
+      });
+
+      useGameStore.getState().setOnlineCount(room.state.players.size);
+    });
+
+    room.state.players.onRemove((_player: any, sessionId: string) => {
+      console.log(`[WorldScene] Remote player left: ${sessionId}`);
+      const remote = this.remotePlayers.get(sessionId);
+      if (remote) {
+        remote.destroy();
+        this.remotePlayers.delete(sessionId);
+      }
+      useGameStore.getState().setOnlineCount(room.state.players.size);
+    });
+
+    useGameStore.getState().setOnlineCount(room.state.players.size || 1);
+  }
+
+  update(time: number): void {
     if (!this.player) return;
 
     this.player.update();
+
+    // Update remote players' lerp
+    for (const remote of this.remotePlayers.values()) {
+      remote.update();
+    }
 
     // Zone detection at current coordinates
     const playerX = this.player.x;
@@ -85,7 +150,22 @@ export class WorldScene extends Phaser.Scene {
       useGameStore.getState().setCurrentZone(detectedZone.id);
     }
 
-    // Sync position periodically or on move
+    // Broadcast local movement to Colyseus at 20 Hz (every 50ms)
+    if (this.colyseusRoom && time - this.lastNetworkSendTime > 50) {
+      this.lastNetworkSendTime = time;
+
+      const body = this.player.body as Phaser.Physics.Arcade.Body;
+      networkManager.sendMove({
+        x: Math.round(playerX),
+        y: Math.round(playerY),
+        vx: Math.round(body?.velocity.x || 0),
+        vy: Math.round(body?.velocity.y || 0),
+        direction: this.player.getDirection(),
+        movementState: this.player.getMovementState(),
+      });
+    }
+
+    // Sync position to React store
     const roundedX = Math.round(playerX);
     const roundedY = Math.round(playerY);
     const storePos = useGameStore.getState().playerPosition;
@@ -94,3 +174,4 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 }
+

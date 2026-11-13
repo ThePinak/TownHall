@@ -14,7 +14,11 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "colyseus.js": ["./node_modules/colyseus.js/lib/index.d.ts"]
+    }
   },
   "include": ["src", "vite.config.ts"]
 }
+

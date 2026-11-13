@@ -34,3 +34,4 @@ export const GameCanvas: React.FC = () => {
     />
   );
 };
+
