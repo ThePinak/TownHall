@@ -15,8 +15,8 @@ export function hashSecret(secret: string): string {
 export async function verifyAuthToken(token?: string): Promise<UserProfile | null> {
   if (!token || !token.trim()) return null;
 
-  // 1. Check for dev/offline token pattern: "dev-token:{userId}:{displayName}:{avatarId}"
-  if (token.startsWith('dev-token:')) {
+  // 1. Check for offline/dev token pattern: "token:{userId}:{displayName}:{avatarId}" or "dev-token:..."
+  if (token.startsWith('token:') || token.startsWith('dev-token:')) {
     const parts = token.split(':');
     const userId = parts[1] || crypto.randomUUID();
     const displayName = parts[2] || `Player-${userId.slice(0, 4)}`;
@@ -61,3 +61,4 @@ export async function verifyAuthToken(token?: string): Promise<UserProfile | nul
 
   return null;
 }
+

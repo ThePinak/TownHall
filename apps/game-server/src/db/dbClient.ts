@@ -430,3 +430,4 @@ export const db: DatabaseOperations =
   supabaseUrl && supabaseKey && !supabaseUrl.includes('your-project')
     ? new SupabaseDatabase(supabaseUrl, supabaseKey)
     : new InMemoryDatabase();
+

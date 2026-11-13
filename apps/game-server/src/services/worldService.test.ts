@@ -126,3 +126,4 @@ describe('World & Invitation Service Unit Tests (M4)', () => {
     assert.strictEqual(await SessionService.isSessionActive(userId, 'client-socket-2', gen2), true);
   });
 });
+

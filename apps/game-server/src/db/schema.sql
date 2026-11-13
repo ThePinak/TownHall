@@ -65,3 +65,4 @@ CREATE TABLE IF NOT EXISTS account_sessions (
     session_generation INT NOT NULL DEFAULT 1,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+

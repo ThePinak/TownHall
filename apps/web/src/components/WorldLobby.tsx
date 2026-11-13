@@ -238,3 +238,4 @@ export const WorldLobby: React.FC<WorldLobbyProps> = ({ onEnterWorld, onSignOut 
     </div>
   );
 };
+

@@ -33,10 +33,14 @@ async function requireAuth(req: express.Request, res: express.Response, next: ex
   next();
 }
 
-// 1. Create Private World (enforces ADR-05: 1 active world per creator)
+// 1. Create Private World (enforces registered account + ADR-05)
 app.post('/api/worlds', requireAuth, async (req, res) => {
   try {
     const user = (req as any).user;
+    if (user.userId.startsWith('guest-')) {
+      res.status(403).json({ error: 'You must have a registered account to create a private world. Please sign in or register.' });
+      return;
+    }
     const { name } = req.body;
     const result = await WorldService.createWorld(user.userId, name || 'My Town');
     res.status(201).json(result);
