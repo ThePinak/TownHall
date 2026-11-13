@@ -52,11 +52,15 @@ export class WorldScene extends Phaser.Scene {
 
     const store = useGameStore.getState();
 
-    // Connect to Colyseus Server (Phase 3B)
+    // Connect to Colyseus Server (Phase 3B & M4)
     try {
       this.colyseusRoom = await networkManager.joinWorld({
         displayName: store.displayName,
         avatarId: store.avatarId,
+        worldId: store.worldId || undefined,
+        authToken: store.authToken || undefined,
+        inviteToken: store.activeInviteToken || undefined,
+        userId: store.user?.userId || undefined,
       });
 
       this.setupColyseusListeners(this.colyseusRoom);

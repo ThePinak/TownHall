@@ -3,6 +3,7 @@ import assert from 'node:assert';
 import { Client, Room } from 'colyseus.js';
 import { MAX_WORLD_CAPACITY } from '@townhall/shared';
 import { WorldState } from './schema/WorldState';
+import { WorldService } from './services/worldService';
 
 const SERVER_URL = 'ws://localhost:2567';
 
@@ -12,6 +13,7 @@ test('connects two clients, synchronizes presence, broadcasts movement, and hand
 
   // Client A joins
   const roomA: Room<WorldState> = await clientA.joinOrCreate<WorldState>('world_room', {
+    worldId: 'test-world',
     displayName: 'Alice',
     avatarId: 'avatar-01',
   });
@@ -35,6 +37,7 @@ test('connects two clients, synchronizes presence, broadcasts movement, and hand
 
   // Client B joins
   const roomB: Room<WorldState> = await clientB.joinOrCreate<WorldState>('world_room', {
+    worldId: 'test-world',
     displayName: 'Bob',
     avatarId: 'avatar-02',
   });
@@ -90,12 +93,20 @@ test('enforces maximum capacity of 20 concurrent clients on live server', async 
   const clients: Client[] = [];
   const rooms: Room<WorldState>[] = [];
 
+  // Create a private world in DB with unique owner
+  const ownerId = `owner-bot-host-${Date.now()}`;
+  const { world, inviteToken } = await WorldService.createWorld(ownerId, '20 Bot Test World');
+  const worldId = world.id;
+
   try {
     // Connect first client to create the world
     const client0 = new Client(SERVER_URL);
     const room0 = await client0.joinOrCreate<WorldState>('world_room', {
+      worldId,
       displayName: 'Host-0',
       avatarId: 'avatar-01',
+      authToken: `dev-token:${ownerId}:Host-0:avatar-01`,
+      inviteToken,
     });
     clients.push(client0);
     rooms.push(room0);
@@ -105,8 +116,11 @@ test('enforces maximum capacity of 20 concurrent clients on live server', async 
     for (let i = 1; i < MAX_WORLD_CAPACITY; i++) {
       const client = new Client(SERVER_URL);
       const room = await client.joinById<WorldState>(targetRoomId, {
+        worldId,
         displayName: `Bot-${i}`,
         avatarId: 'avatar-01',
+        authToken: `dev-token:bot-user-${i}:Bot-${i}:avatar-01`,
+        inviteToken,
       });
       clients.push(client);
       rooms.push(room);
@@ -121,8 +135,11 @@ test('enforces maximum capacity of 20 concurrent clients on live server', async 
     let rejected = false;
     try {
       await client21.joinById(targetRoomId, {
+        worldId,
         displayName: 'Overflow-Bot',
         avatarId: 'avatar-03',
+        authToken: 'dev-token:bot-overflow:Overflow-Bot:avatar-03',
+        inviteToken,
       });
     } catch (err: any) {
       rejected = true;
@@ -132,7 +149,6 @@ test('enforces maximum capacity of 20 concurrent clients on live server', async 
   } finally {
     // Disconnect all bots
     await Promise.all(rooms.map((r) => r.leave()));
-    // Allow clean exit
     setTimeout(() => process.exit(0), 100);
   }
 });

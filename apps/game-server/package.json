@@ -7,13 +7,14 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "node --import tsx --test src/rooms/WorldRoom.test.ts",
-    "test:e2e": "node --import tsx --test src/multiplayer.e2e.test.ts",
+    "test": "node --import tsx --test src/rooms/WorldRoom.test.ts src/services/worldService.test.ts",
+    "test:e2e": "node --import tsx --test src/multiplayer.e2e.test.ts src/lifecycle.e2e.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@colyseus/schema": "^2.0.0",
     "@colyseus/tools": "^0.15.35",
+    "@supabase/supabase-js": "^2.119.0",
     "@townhall/shared": "workspace:*",
     "colyseus": "^0.15.42",
     "cors": "^2.8.5",

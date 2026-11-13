@@ -3,6 +3,7 @@ import { Direction, MovementState, AvatarId, ZoneId } from '@townhall/shared';
 
 export class PlayerState extends Schema {
   @type('string') sessionId: string = '';
+  @type('string') userId: string = '';
   @type('string') displayName: string = 'Alex';
   @type('string') avatarId: AvatarId = 'avatar-01';
 

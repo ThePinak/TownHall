@@ -13,7 +13,13 @@ import {
   getZoneAt,
   AvatarId,
   AVATAR_IDS,
+  DISCONNECT_CODE_NEWER_SESSION,
+  DISCONNECT_CODE_CAPACITY_REACHED,
 } from '@townhall/shared';
+import { verifyAuthToken } from '../services/authService';
+import { WorldService } from '../services/worldService';
+import { SessionService } from '../services/sessionService';
+import { LifecycleService } from '../services/lifecycleService';
 
 // 20 Town Hall safe spawn coordinates from world-v1.tmj
 export const TOWN_HALL_SPAWNS = [
@@ -23,9 +29,16 @@ export const TOWN_HALL_SPAWNS = [
   { x: 720, y: 678 }, { x: 755, y: 678 }, { x: 790, y: 678 }, { x: 825, y: 678 }, { x: 860, y: 678 },
 ];
 
+export interface AuthContext {
+  userId: string;
+  displayName: string;
+  avatarId: AvatarId;
+}
+
 export class WorldRoom extends Room<WorldState> {
   maxClients = MAX_WORLD_CAPACITY; // 20 concurrent users max (ADR-02 / DEC-10)
   private spawnIndex = 0;
+  private userToClientMap = new Map<string, Client>(); // userId -> active Client socket
 
   onCreate(options: { worldId?: string }) {
     this.setState(new WorldState());
@@ -40,17 +53,68 @@ export class WorldRoom extends Room<WorldState> {
     });
   }
 
-  onJoin(client: Client, options?: JoinPayload) {
+  async onAuth(client: Client, options?: JoinPayload): Promise<AuthContext> {
+    const worldId = this.state.worldId;
+
+    // 1. Verify user authentication token
+    let profile = await verifyAuthToken(options?.authToken);
+
+    const userId = profile?.userId || options?.userId || `guest-${client.sessionId}`;
+    const displayName = profile?.displayName || options?.displayName?.trim().slice(0, 20) || `Player-${client.sessionId.slice(0, 4)}`;
+    const requestedAvatar = (profile?.avatarId || options?.avatarId) as AvatarId;
+    const avatarId = AVATAR_IDS.includes(requestedAvatar) ? requestedAvatar : 'avatar-01';
+
+    // 2. Access verification if world exists in DB
+    const dbWorld = await WorldService.getWorld(worldId);
+    if (dbWorld) {
+      if (dbWorld.status === 'deleted') {
+        throw new Error('This world has expired and no longer exists');
+      }
+
+      // If user is not the owner, validate invitation token
+      if (dbWorld.ownerUserId !== userId) {
+        if (!options?.inviteToken) {
+          throw new Error('Private world: an invitation code or link is required to join');
+        }
+        const inviteValidation = await WorldService.validateInvite(options.inviteToken);
+        if (!inviteValidation.valid || inviteValidation.worldId !== worldId) {
+          throw new Error(inviteValidation.error || 'Invalid or expired invitation');
+        }
+      }
+    }
+
+    // 3. ADR-03: Single active session per account, newest session replaces previous
+    const existingClient = this.userToClientMap.get(userId);
+    if (existingClient && existingClient.sessionId !== client.sessionId) {
+      console.log(`[ADR-03] Replacing existing session for user "${userId}". Disconnecting old socket ${existingClient.sessionId}`);
+      try {
+        existingClient.leave(DISCONNECT_CODE_NEWER_SESSION);
+      } catch (err) {
+        // Ignore if already disconnected
+      }
+    }
+
+    // Record new active session
+    await SessionService.claimSession(userId, client.sessionId);
+    this.userToClientMap.set(userId, client);
+
+    return {
+      userId,
+      displayName,
+      avatarId,
+    };
+  }
+
+  async onJoin(client: Client, options?: JoinPayload, auth?: AuthContext) {
     if (this.state.players.size >= this.maxClients) {
       throw new Error('World capacity reached (20/20 users)');
     }
 
     const player = new PlayerState();
     player.sessionId = client.sessionId;
-    player.displayName = options?.displayName?.trim().slice(0, 20) || `Player-${client.sessionId.slice(0, 4)}`;
-
-    const requestedAvatar = options?.avatarId as AvatarId;
-    player.avatarId = AVATAR_IDS.includes(requestedAvatar) ? requestedAvatar : 'avatar-01';
+    player.userId = auth?.userId || options?.userId || `user-${client.sessionId}`;
+    player.displayName = auth?.displayName || options?.displayName?.trim().slice(0, 20) || `Player-${client.sessionId.slice(0, 4)}`;
+    player.avatarId = auth?.avatarId || options?.avatarId || 'avatar-01';
 
     // Assign safe spawn position in Town Hall
     const spawn = TOWN_HALL_SPAWNS[this.spawnIndex % TOWN_HALL_SPAWNS.length];
@@ -62,7 +126,12 @@ export class WorldRoom extends Room<WorldState> {
     this.state.players.set(client.sessionId, player);
     this.state.activeCount = this.state.players.size;
 
-    console.log(`[WorldRoom] Client joined: ${client.sessionId} (${player.displayName}). Total: ${this.state.activeCount}/20`);
+    // ADR-07: When a participant joins, cancel any empty-world grace period
+    if (this.state.worldId && this.state.worldId !== 'test-world') {
+      await LifecycleService.handleWorldActive(this.state.worldId);
+    }
+
+    console.log(`[WorldRoom] Client joined: ${client.sessionId} (${player.displayName}, User: ${player.userId}). Total: ${this.state.activeCount}/20`);
   }
 
   handlePlayerMove(client: Client, data: MovePayload) {
@@ -73,41 +142,46 @@ export class WorldRoom extends Room<WorldState> {
     const dtSeconds = Math.max(0.01, Math.min(0.2, (now - player.lastUpdatedAt) / 1000));
     player.lastUpdatedAt = now;
 
-    // Maximum distance player could move in dtSeconds + 20% network variance buffer
-    const maxAllowedDistance = (MOVEMENT_SPEED * dtSeconds) * 1.25 + 8;
+    const maxAllowedDist = MOVEMENT_SPEED * dtSeconds * 1.5;
     const dx = data.x - player.x;
     const dy = data.y - player.y;
-    const distanceMoved = Math.sqrt(dx * dx + dy * dy);
+    const dist = Math.hypot(dx, dy);
 
-    if (distanceMoved <= maxAllowedDistance) {
-      // Validated movement
+    if (dist <= maxAllowedDist) {
       player.x = Math.max(16, Math.min(MAP_WIDTH_PX - 16, data.x));
       player.y = Math.max(24, Math.min(MAP_HEIGHT_PX - 24, data.y));
     } else {
-      // Exceeded speed threshold / teleport attempt - clamp movement
       const angle = Math.atan2(dy, dx);
-      player.x += Math.cos(angle) * maxAllowedDistance;
-      player.y += Math.sin(angle) * maxAllowedDistance;
+      player.x += Math.cos(angle) * maxAllowedDist;
+      player.y += Math.sin(angle) * maxAllowedDist;
     }
 
-    player.vx = data.vx || 0;
-    player.vy = data.vy || 0;
-    player.direction = data.direction || player.direction;
-    player.movementState = data.movementState || 'idle';
+    player.vx = data.vx;
+    player.vy = data.vy;
+    player.direction = data.direction;
+    player.movementState = data.movementState;
 
-    // Authoritative zone detection
     const zone = getZoneAt(player.x, player.y);
     if (zone && zone.id !== player.zoneId) {
       player.zoneId = zone.id;
     }
   }
 
-  onLeave(client: Client, consented?: boolean) {
+  async onLeave(client: Client, consented?: boolean) {
     const player = this.state.players.get(client.sessionId);
+    if (player && this.userToClientMap.get(player.userId)?.sessionId === client.sessionId) {
+      this.userToClientMap.delete(player.userId);
+    }
+
     this.state.players.delete(client.sessionId);
     this.state.activeCount = this.state.players.size;
 
     console.log(`[WorldRoom] Client left: ${client.sessionId} (${player?.displayName}). Total: ${this.state.activeCount}/20`);
+
+    // ADR-07: If last participant left, start 10-minute grace period
+    if (this.state.players.size === 0 && this.state.worldId && this.state.worldId !== 'test-world') {
+      await LifecycleService.handleWorldEmpty(this.state.worldId);
+    }
   }
 
   update(deltaTime: number) {

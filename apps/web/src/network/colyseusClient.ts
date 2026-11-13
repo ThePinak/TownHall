@@ -1,6 +1,6 @@
 import { Client, Room } from 'colyseus.js';
 import { useGameStore } from '../store/gameStore';
-import { MovePayload, JoinPayload } from '@townhall/shared';
+import { MovePayload, JoinPayload, DISCONNECT_CODE_NEWER_SESSION } from '@townhall/shared';
 
 class ColyseusNetworkManager {
   private client: Client;
@@ -18,6 +18,7 @@ class ColyseusNetworkManager {
 
     this.isConnecting = true;
     useGameStore.getState().setNetworkStatus('connecting');
+    useGameStore.getState().setDisconnectReason(null);
 
     try {
       this.room = await this.client.joinOrCreate('world_room', options);
@@ -35,6 +36,15 @@ class ColyseusNetworkManager {
       this.room.onLeave((code: number) => {
         console.log(`[Colyseus] Left room with code: ${code}`);
         useGameStore.getState().setNetworkStatus('disconnected');
+
+        if (code === DISCONNECT_CODE_NEWER_SESSION) {
+          useGameStore
+            .getState()
+            .setDisconnectReason(
+              'You were disconnected because a newer session was opened for this account from another window or device (ADR-03).'
+            );
+        }
+
         this.room = null;
       });
 
@@ -49,6 +59,18 @@ class ColyseusNetworkManager {
     }
   }
 
+  async leaveWorld() {
+    if (this.room) {
+      try {
+        await this.room.leave();
+      } catch (err) {
+        // ignore
+      }
+      this.room = null;
+    }
+    useGameStore.getState().setNetworkStatus('disconnected');
+  }
+
   sendMove(payload: MovePayload) {
     if (this.room) {
       this.room.send('move', payload);
@@ -57,13 +79,6 @@ class ColyseusNetworkManager {
 
   getRoom(): Room | null {
     return this.room;
-  }
-
-  leave() {
-    if (this.room) {
-      this.room.leave();
-      this.room = null;
-    }
   }
 }
 

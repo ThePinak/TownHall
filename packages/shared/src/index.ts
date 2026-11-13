@@ -53,7 +53,13 @@ export interface MovePayload {
 export interface JoinPayload {
   displayName: string;
   avatarId: AvatarId;
+  authToken?: string;
+  inviteToken?: string;
+  worldId?: string;
+  userId?: string;
 }
+
+export * from './auth';
 
 export function normalizeVelocity(vx: number, vy: number, speed: number = MOVEMENT_SPEED): { vx: number; vy: number } {
   if (vx !== 0 && vy !== 0) {
